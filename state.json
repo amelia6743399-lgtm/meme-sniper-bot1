@@ -1,0 +1,10 @@
+{
+  "chain_id": "base",
+  "updated_at": null,
+  "paper_balance_usd": 1000,
+  "total_decisions": 0,
+  "candidates_seen": 0,
+  "open_positions": [],
+  "recent_decisions": [],
+  "error": "Эхний scan хийгдээгүй байна. GitHub Actions дээр workflow ажиллуулна уу."
+}

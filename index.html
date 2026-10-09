@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="mn">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meme Paper Trader</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2d;--line:#26334e;--muted:#9aa9c4;--text:#edf3ff;--green:#56d6a0;--red:#ff7c86;--yellow:#f2ca75}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#162442,#0b1020 55%);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+main{max-width:1100px;margin:auto;padding:22px 16px 50px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+h1{font-size:clamp(24px,5vw,36px);margin:0;letter-spacing:-.04em}.sub{color:var(--muted);margin:6px 0 20px}.pill{border:1px solid #326b59;color:var(--green);padding:6px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin:16px 0}
+.card{background:rgba(18,26,45,.94);border:1px solid var(--line);border-radius:16px;padding:16px;min-width:0}.label{color:var(--muted);font-size:12px}.value{font-size:24px;font-weight:750;margin-top:5px;overflow-wrap:anywhere}
+h2{font-size:18px;margin:0 0 12px}.note{border:1px solid #65502b;background:#2b2418;color:#f5dca5;padding:12px 14px;border-radius:12px;margin:14px 0}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}.muted{color:var(--muted)}.small{font-size:12px}
+.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:650px}th,td{text-align:left;padding:11px 9px;border-bottom:1px solid var(--line);font-size:13px}th{color:var(--muted);font-weight:600}td{overflow-wrap:anywhere}.status{font-weight:700}.buy{color:var(--green)}.skip{color:var(--yellow)}.bad{color:var(--red)}
+button{background:#253b65;color:#fff;border:1px solid #45659b;border-radius:10px;padding:9px 12px;font-weight:650;cursor:pointer}button:active{transform:scale(.98)}
+footer{margin-top:18px;color:var(--muted);font-size:12px}
+@media(max-width:700px){main{padding:16px 11px 32px}.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.card{padding:13px}.value{font-size:21px}}
+</style>
+</head>
+<body><main>
+<div class="top"><div><h1>Meme Paper Trader</h1><div class="sub">Шинэ токен сканнер · бодит мөнгө ашиглахгүй туршилт</div></div><span class="pill">PAPER MODE · LIVE TRADING OFF</span></div>
+<div class="note"><b>Анхаар:</b> Энэ dashboard нь зөвхөн paper-trading. Бодит арилжаа, wallet холболт, private key ашиглахгүй. Token-ийн owner-renounced болон contract-code шалгалт баталгаажаагүй бол бот худалдан авахгүй.</div>
+<div class="grid">
+<div class="card"><div class="label">Paper balance</div><div class="value" id="balance">—</div><div class="small muted">Эхлэх виртуал үлдэгдэл</div></div>
+<div class="card"><div class="label">Нийт шийдвэр</div><div class="value" id="decisions">—</div><div class="small muted">Сүүлийн хадгалсан өгөгдөл</div></div>
+<div class="card"><div class="label">Paper positions</div><div class="value" id="positions">—</div><div class="small muted">Нээлттэй виртуал байрлал</div></div>
+<div class="card"><div class="label">Сүүлд ажилласан</div><div class="value" id="updated" style="font-size:16px">—</div><div class="small muted" id="chain">Chain: —</div></div>
+</div>
+<div class="card">
+<div class="row"><h2>Сүүлийн шийдвэрүүд</h2><button id="refresh">Шинэчлэх</button></div>
+<div class="tablewrap"><table><thead><tr><th>Токен</th><th>Liquidity</th><th>Risk</th><th>AI confidence</th><th>Шийдвэр</th><th>Шалтгаан</th></tr></thead><tbody id="rows"><tr><td colspan="6" class="muted">Өгөгдөл уншиж байна…</td></tr></tbody></table></div>
+<div class="small muted" id="source" style="margin-top:10px">data/state.json-оос уншина.</div>
+</div>
+<div class="card" style="margin-top:14px"><h2>Яаж ажиллуулах вэ?</h2><ol><li>Энэ ZIP-ийг GitHub repository-д upload хийнэ.</li><li>Settings → Pages → Deploy from a branch → <b>main</b> / <b>root</b> гэж сонгоно.</li><li>Actions tab-д Paper Trading Scanner workflow-ийг идэвхжүүлнэ.</li><li>Actions → Paper Trading Scanner → Run workflow дарж эхний удаа гараар ажиллуулж болно.</li></ol><p class="small muted">GitHub Actions-ийн хуваарьт ажиллалт яг тогтмол цагт биелэх баталгаа байхгүй. GitHub Pages зөвхөн dashboard харуулна; сканнерийг Actions ажиллуулна.</p></div>
+<footer>Энэ бол туршилтын prototype. API хязгаарлалт, дутуу metadata, price impact, honeypot зэрэг бүх эрсдэлийг бүрэн илрүүлэхгүй. Ашиг олох амлалт биш.</footer>
+</main>
+<script>
+const fmt=(n)=>n==null?'—':Number(n).toLocaleString('en-US',{maximumFractionDigits:4});
+async function load(){
+ const rows=document.getElementById('rows');
+ try{
+  const r=await fetch('./data/state.json?ts='+Date.now(),{cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  const d=await r.json();
+  document.getElementById('balance').textContent=fmt(d.paper_balance_usd)+' USD';
+  document.getElementById('decisions').textContent=fmt(d.total_decisions);
+  document.getElementById('positions').textContent=fmt((d.open_positions||[]).length);
+  document.getElementById('updated').textContent=d.updated_at?new Date(d.updated_at).toLocaleString():'—';
+  document.getElementById('chain').textContent='Chain: '+(d.chain_id||'—');
+  document.getElementById('source').textContent='Эх сурвалж: DexScreener public API · '+(d.candidates_seen||0)+' candidate · '+(d.error||'');
+  const items=d.recent_decisions||[];
+  rows.innerHTML=items.length?items.map(x=>`<tr><td><b>${esc(x.symbol||x.name||'Unknown')}</b><br><span class="muted">${esc((x.address||'').slice(0,8))}…</span></td><td>$${fmt(x.liquidity_usd)}</td><td>${x.risk_score??'—'}</td><td>${x.confidence==null?'—':(x.confidence*100).toFixed(0)+'%'}</td><td class="status ${x.decision==='BUY'?'buy':x.decision==='SKIP'?'skip':'bad'}">${esc(x.decision||'SKIP')}</td><td>${esc(x.reason||'—')}</td></tr>`).join(''):'<tr><td colspan="6" class="muted">Шийдвэр одоогоор алга. Actions workflow ажиллуулна уу.</td></tr>';
+ }catch(e){rows.innerHTML='<tr><td colspan="6" class="bad">Өгөгдөл уншиж чадсангүй. GitHub Pages тохиргоо болон data/state.json файлыг шалгана уу.</td></tr>';document.getElementById('source').textContent=e.message;}
+}
+function esc(v){return String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+document.getElementById('refresh').onclick=load;load();setInterval(load,60000);
+</script></body></html>
